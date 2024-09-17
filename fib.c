@@ -2,14 +2,20 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-typedef unsigned long long int (*ProviderPtr)(int);
+typedef unsigned long long int (*fibFunc)(int);
 unsigned long long int memo[100];
-ProviderPtr ptr;
+fibFunc ptr;
 
+void initializeCache(fibFunc);
 unsigned long long int fib_i(int);
 unsigned long long int fib_r(int);
-unsigned long long int fib_wrapper(int);
-void initializeCache(ProviderPtr);
+unsigned long long int fibWrapper(int);
+int isOverflow(unsigned long long, unsigned long long);
+
+void initializeCache(fibFunc chosenFunc) {
+   ptr = chosenFunc;
+   memo[2] = 1;
+}
 
 unsigned long long int fib_i(int seq) {
    // base
@@ -23,7 +29,10 @@ unsigned long long int fib_i(int seq) {
    unsigned long long int cur = 1;
 
    // iterate starts from 3rd fib since we already have 1st and 2nd fib
-   for (int i = 0; i < seq - 2; i++) {
+   for (int i = 2; i < seq; i++) {
+      if (isOverflow(prev, cur)) {
+         return ULLONG_MAX;
+      }
       unsigned long long int nxt = prev + cur;
       prev = cur;
       cur = nxt;
@@ -40,34 +49,39 @@ unsigned long long int fib_r(int seq) {
       return 1;
    }
 
-   unsigned long long int cur = fib_wrapper(seq - 1) + fib_wrapper(seq - 2);
+   unsigned long long int prev = fibWrapper(seq - 1);
+   unsigned long long int prevprev = fibWrapper(seq - 2);
 
-   return cur;
+   if (isOverflow(prev, prevprev)) {
+      return ULLONG_MAX;
+   }
+
+   return prev + prevprev;
 }
 
-void initializeCache(ProviderPtr fib) {
-   ptr = fib;
-   // memo[1] = 0;
-   memo[2] = 1;
-}
-
-unsigned long long int fib_wrapper(int seq) {
-   // recursive case
+unsigned long long int fibWrapper(int seq) {
+   // base case
    if (memo[seq] != 0) {
       return memo[seq];
    }
 
+   // recursive case
    memo[seq] = ptr(seq);
-
    return memo[seq];
 }
 
-int main(int argc, char *argv[]) {
-   int num1;
-   sscanf(argv[1], "%d", &num1);
-   char* method = argv[2];
+int isOverflow(unsigned long long int prev, unsigned long long int cur) {
+   // overflow happens when prev + cur > max_int so we have overflow when cur > max_int - prev
+   if (cur > ULLONG_MAX - prev) {
+      return 1;
+   }
+   return 0;
+}
 
-   int num2 = 0;
+int main(int argc, char *argv[]) {
+   int seq;
+   sscanf(argv[1], "%d", &seq);
+   char* method = argv[2];
 
    unsigned long long int result;
    
@@ -78,9 +92,14 @@ int main(int argc, char *argv[]) {
       initializeCache(fib_i);
    }
 
-   result = fib_wrapper(num1 + num2);
+   result = fibWrapper(seq);
 
-   printf("%llu", result);
-
+   if (result == ULLONG_MAX) {
+      printf("overflow occured");
+   }
+   else {
+      printf("%llu", result);
+   }
+   
    return 0;
 }
