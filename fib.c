@@ -36,7 +36,7 @@ ReturnVal fib_i(int seq)
    unsigned long long int cur = 1;
 
    // iterate starts from 3rd fib since we already have 1st and 2nd fib
-   for (int i = 2; i < seq; i++)
+   for (int idx = 2; idx < seq; idx++)
    {
       if (sumWouldOverflow(prev, cur))
       {
